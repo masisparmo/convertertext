@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aplikasi Multi Converter AI</title>
+    <title>Aplikasi Multi Converter Teks</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -17,9 +17,6 @@
             border-radius: 0.75rem;
             box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
             transition: all 0.3s ease;
-        }
-        .converter-card:hover {
-            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
         }
         textarea, .rich-text-editor {
             border: 1px solid #d1d5db;
@@ -72,6 +69,22 @@
             cursor: pointer; color: #9ca3af;
         }
         .main-content.blurred { filter: blur(5px); pointer-events: none; }
+
+        /* Selection Card Styles */
+        .selection-card {
+            background-color: white;
+            border-radius: 0.75rem;
+            padding: 2rem;
+            text-align: center;
+            border: 1px solid #e5e7eb;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .selection-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            border-color: #4f46e5;
+        }
     </style>
 </head>
 <body class="p-4 sm:p-6 md:p-8">
@@ -84,7 +97,7 @@
             <input type="password" id="api-key-input" class="w-full p-2 border rounded-md mb-4" placeholder="Masukkan Kunci API Anda di sini...">
             <div class="flex flex-col sm:flex-row gap-3">
                 <button id="save-api-key-btn" class="btn btn-primary flex-1">Simpan dan Mulai</button>
-                <button id="how-to-api-btn" class="btn btn-secondary flex-1">Bagaimana Caranya?</button>
+                <button id="how-to-api-btn" class="btn btn-secondary flex-1">Cara Mendapatkan kode API</button>
             </div>
             <p class="text-center text-gray-500 my-4">ATAU</p>
             <a href="https://g.co/gemini/share/782c867b092e" target="_blank" class="btn btn-secondary w-full">
@@ -120,10 +133,30 @@
             <p class="mt-2 text-gray-600">Alat bantu konversi format teks dengan kekuatan Gemini AI.</p>
         </header>
 
-        <main class="space-y-12">
-            <!-- All converter sections will go here -->
-            <section id="prompt-json-converter" class="converter-card p-6">
-                <h2 class="text-2xl font-semibold text-gray-800 mb-4">Konverter Prompt ↔ JSON (AI-Powered)</h2>
+        <main id="app-main-view" class="space-y-12">
+            <!-- Converter Selection View -->
+            <div id="converter-selection" class="hidden">
+                <h2 class="text-2xl font-semibold text-gray-800 mb-8 text-center">Pilih Alat Konverter</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+                    <button data-converter="prompt-json-converter" class="selection-card">
+                        <i class="fas fa-code fa-2x mb-4 text-indigo-500"></i>
+                        <h3 class="text-xl font-bold text-gray-800">Prompt ↔ JSON</h3>
+                        <p class="text-gray-600 mt-2">Ubah teks biasa menjadi JSON terstruktur untuk AI dan sebaliknya.</p>
+                    </button>
+                    <button data-converter="markdown-converter" class="selection-card">
+                        <i class="fab fa-markdown fa-2x mb-4 text-teal-500"></i>
+                        <h3 class="text-xl font-bold text-gray-800">Teks ↔ Markdown</h3>
+                        <p class="text-gray-600 mt-2">Konversi rich text atau HTML ke format Markdown yang bersih.</p>
+                    </button>
+                </div>
+            </div>
+
+            <!-- JSON Converter Section (hidden by default) -->
+            <section id="prompt-json-converter" class="converter-card p-6 hidden">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-2xl font-semibold text-gray-800">Konverter Prompt ↔ JSON</h2>
+                    <button class="back-to-selection btn btn-secondary"><i class="fas fa-arrow-left mr-2"></i> Kembali</button>
+                </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
                     <div class="space-y-2">
                         <label for="prompt-input" class="font-medium text-gray-700">Teks Prompt Biasa</label>
@@ -137,9 +170,9 @@
                 <div class="mt-6 flex flex-wrap gap-3 justify-between items-center">
                     <div class="flex flex-wrap gap-3">
                         <button id="to-json-btn" class="btn btn-primary"><i class="fas fa-arrow-right mr-2"></i> Ke JSON</button>
-                        <button id="enhance-prompt-btn" class="btn btn-ai"><i class="fas fa-magic-sparkles mr-2"></i> ✨ Sempurnakan Prompt</button>
-                        <button id="to-prompt-btn" class="btn btn-primary"><i class="fas fa-arrow-left mr-2"></i> Ke Teks Prompt</button>
-                        <button id="variate-json-btn" class="btn btn-ai"><i class="fas fa-lightbulb mr-2"></i> ✨ Buat Variasi</button>
+                        <button id="enhance-prompt-btn" class="btn btn-ai"><i class="fas fa-magic-sparkles mr-2"></i> ✨ Sempurnakan</button>
+                        <button id="to-prompt-btn" class="btn btn-primary"><i class="fas fa-arrow-left mr-2"></i> Ke Teks</button>
+                        <button id="variate-json-btn" class="btn btn-ai"><i class="fas fa-lightbulb mr-2"></i> ✨ Variasi</button>
                     </div>
                     <div class="flex flex-wrap gap-3">
                         <button id="copy-prompt-btn" class="btn btn-secondary"><i class="fas fa-copy mr-2"></i> Salin Teks</button>
@@ -150,8 +183,12 @@
                 </div>
             </section>
 
-            <section id="markdown-converter" class="converter-card p-6">
-                <h2 class="text-2xl font-semibold text-gray-800 mb-4">Konverter Teks ↔ Markdown (AI-Powered)</h2>
+            <!-- Markdown Converter Section (hidden by default) -->
+            <section id="markdown-converter" class="converter-card p-6 hidden">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-2xl font-semibold text-gray-800">Konverter Teks ↔ Markdown</h2>
+                    <button class="back-to-selection btn btn-secondary"><i class="fas fa-arrow-left mr-2"></i> Kembali</button>
+                </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
                     <div class="space-y-2">
                         <label for="richtext-input" class="font-medium text-gray-700">Teks Biasa / Rich Text</label>
@@ -197,6 +234,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const apiStatusBar = document.getElementById('api-status-bar');
     const changeApiKeyBtn = document.getElementById('change-api-key-btn');
 
+    // --- View Management Elements ---
+    const converterSelectionView = document.getElementById('converter-selection');
+    const converterSections = document.querySelectorAll('.converter-card');
+    const selectionButtons = document.querySelectorAll('.selection-card');
+    const backButtons = document.querySelectorAll('.back-to-selection');
+
     // --- App Logic Elements ---
     const promptInput = document.getElementById('prompt-input');
     const jsonOutput = document.getElementById('json-output');
@@ -241,31 +284,51 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // --- DOWNLOAD FUNCTION ---
-    // **FIX**: Menggunakan metode standar dan paling kompatibel.
-    // Dialog "Save As" bergantung pada pengaturan browser pengguna.
     const downloadFile = (content, defaultFileName, mimeTypeWithCharset) => {
         if (!content || !content.trim()) {
             showToast('Tidak ada konten untuk diunduh!');
             return;
         }
-        
         try {
             const blob = new Blob([content], { type: mimeTypeWithCharset });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = defaultFileName; // Browser menggunakan ini untuk nama file
+            a.download = defaultFileName;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
-            // Bebaskan memori setelah unduhan dimulai
             setTimeout(() => URL.revokeObjectURL(url), 100);
         } catch (error) {
             console.error('Download error:', error);
             showToast('Gagal mengunduh file.');
         }
     };
+
+    // --- View Management ---
+    function showSelectionView() {
+        converterSelectionView.classList.remove('hidden');
+        converterSections.forEach(section => section.classList.add('hidden'));
+    }
+
+    function showConverterView(converterId) {
+        converterSelectionView.classList.add('hidden');
+        const sectionToShow = document.getElementById(converterId);
+        if (sectionToShow) {
+            sectionToShow.classList.remove('hidden');
+        }
+    }
+
+    selectionButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            const converterId = button.dataset.converter;
+            showConverterView(converterId);
+        });
+    });
+
+    backButtons.forEach(button => {
+        button.addEventListener('click', showSelectionView);
+    });
 
     // --- Gemini API Call ---
     const callGemini = async (prompt) => {
@@ -306,6 +369,7 @@ document.addEventListener('DOMContentLoaded', () => {
         apiModalOverlay.classList.remove('show');
         apiStatusBar.classList.remove('hidden');
         apiStatusBar.classList.add('flex');
+        showSelectionView(); // Show selection menu after initialization
     }
 
     function showApiModal() {
@@ -328,6 +392,8 @@ document.addEventListener('DOMContentLoaded', () => {
             localStorage.removeItem('geminiApiKey');
             GEMINI_API_KEY = '';
             apiStatusBar.classList.add('hidden');
+            converterSelectionView.classList.add('hidden');
+            converterSections.forEach(section => section.classList.add('hidden'));
             showApiModal();
         }
     });
@@ -337,7 +403,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Initial Load Check ---
     const savedApiKey = localStorage.getItem('geminiApiKey');
-    // Cek variabel GOOGLE_API_KEY untuk mendeteksi lingkungan Gemini
     if (typeof GOOGLE_API_KEY !== 'undefined' && GOOGLE_API_KEY) {
         initializeApp(GOOGLE_API_KEY);
         apiStatusBar.querySelector('p').textContent = 'Berjalan di Lingkungan Gemini';
