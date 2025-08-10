@@ -219,8 +219,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const toast = document.getElementById('toast-notification');
     let toastTimeout;
 
-    // Global variable for API Key
+    // --- Global variables ---
     let GEMINI_API_KEY = '';
+    let isGeminiEnvironment = false; // **FIX**: Flag untuk mendeteksi lingkungan
 
     // --- Utility Functions ---
     const showToast = (message) => {
@@ -251,8 +252,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const mimeType = mimeTypeWithCharset.split(';')[0];
         const blob = new Blob([content], { type: mimeTypeWithCharset });
 
-        // Use modern "Save As" API if available (works on GitHub pages, not in restricted iframes)
-        if (window.showSaveFilePicker && localStorage.getItem('geminiApiKey')) {
+        // **FIX**: Gunakan 'Save As' jika API tersedia DAN kita TIDAK di lingkungan Gemini
+        if (window.showSaveFilePicker && !isGeminiEnvironment) {
             try {
                 const handle = await window.showSaveFilePicker({
                     suggestedName: defaultFileName,
@@ -275,7 +276,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // Fallback for Gemini environment or older browsers
+        // Fallback untuk lingkungan Gemini atau browser lama
         try {
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -361,15 +362,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Initial Load Check ---
     const savedApiKey = localStorage.getItem('geminiApiKey');
-    // The special key "GOOGLE_API_KEY" is provided by the Gemini environment.
-    // If it exists, we know we are NOT on GitHub Pages.
+    // **FIX**: Cek variabel GOOGLE_API_KEY untuk mendeteksi lingkungan Gemini
     if (typeof GOOGLE_API_KEY !== 'undefined' && GOOGLE_API_KEY) {
+        isGeminiEnvironment = true; // Set flag
         initializeApp(GOOGLE_API_KEY);
         apiStatusBar.querySelector('p').textContent = 'Berjalan di Lingkungan Gemini';
         changeApiKeyBtn.style.display = 'none';
     } else if (savedApiKey) {
+        isGeminiEnvironment = false; // Bukan lingkungan Gemini
         initializeApp(savedApiKey);
     } else {
+        isGeminiEnvironment = false; // Bukan lingkungan Gemini
         showApiModal();
     }
 
