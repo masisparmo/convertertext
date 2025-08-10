@@ -221,7 +221,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Global variables ---
     let GEMINI_API_KEY = '';
-    let isGeminiEnvironment = false; // **FIX**: Flag untuk mendeteksi lingkungan
 
     // --- Utility Functions ---
     const showToast = (message) => {
@@ -242,52 +241,28 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // --- DOWNLOAD FUNCTION WITH "SAVE AS" DIALOG ---
-    const downloadFile = async (content, defaultFileName, mimeTypeWithCharset) => {
+    // --- DOWNLOAD FUNCTION ---
+    // **FIX**: Menggunakan metode standar dan paling kompatibel.
+    // Dialog "Save As" bergantung pada pengaturan browser pengguna.
+    const downloadFile = (content, defaultFileName, mimeTypeWithCharset) => {
         if (!content || !content.trim()) {
             showToast('Tidak ada konten untuk diunduh!');
             return;
         }
         
-        const mimeType = mimeTypeWithCharset.split(';')[0];
-        const blob = new Blob([content], { type: mimeTypeWithCharset });
-
-        // **FIX**: Gunakan 'Save As' jika API tersedia DAN kita TIDAK di lingkungan Gemini
-        if (window.showSaveFilePicker && !isGeminiEnvironment) {
-            try {
-                const handle = await window.showSaveFilePicker({
-                    suggestedName: defaultFileName,
-                    types: [{
-                        description: 'File',
-                        accept: { [mimeType]: [`.${defaultFileName.split('.').pop()}`] },
-                    }],
-                });
-                const writable = await handle.createWritable();
-                await writable.write(blob);
-                await writable.close();
-                showToast('File berhasil disimpan!');
-                return;
-            } catch (err) {
-                if (err.name === 'AbortError') {
-                    showToast('Penyimpanan dibatalkan.');
-                    return;
-                }
-                console.error('showSaveFilePicker error, using fallback:', err);
-            }
-        }
-
-        // Fallback untuk lingkungan Gemini atau browser lama
         try {
+            const blob = new Blob([content], { type: mimeTypeWithCharset });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = defaultFileName;
+            a.download = defaultFileName; // Browser menggunakan ini untuk nama file
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
-            URL.revokeObjectURL(url);
+            // Bebaskan memori setelah unduhan dimulai
+            setTimeout(() => URL.revokeObjectURL(url), 100);
         } catch (error) {
-            console.error('Fallback download error:', error);
+            console.error('Download error:', error);
             showToast('Gagal mengunduh file.');
         }
     };
@@ -362,17 +337,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Initial Load Check ---
     const savedApiKey = localStorage.getItem('geminiApiKey');
-    // **FIX**: Cek variabel GOOGLE_API_KEY untuk mendeteksi lingkungan Gemini
+    // Cek variabel GOOGLE_API_KEY untuk mendeteksi lingkungan Gemini
     if (typeof GOOGLE_API_KEY !== 'undefined' && GOOGLE_API_KEY) {
-        isGeminiEnvironment = true; // Set flag
         initializeApp(GOOGLE_API_KEY);
         apiStatusBar.querySelector('p').textContent = 'Berjalan di Lingkungan Gemini';
         changeApiKeyBtn.style.display = 'none';
     } else if (savedApiKey) {
-        isGeminiEnvironment = false; // Bukan lingkungan Gemini
         initializeApp(savedApiKey);
     } else {
-        isGeminiEnvironment = false; // Bukan lingkungan Gemini
         showApiModal();
     }
 
