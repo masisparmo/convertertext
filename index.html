@@ -315,8 +315,6 @@
         </footer>
     </div>
 
-    <div id="toast-notification" class="toast-notification">Pesan notifikasi</div>
-
 <script>
 document.addEventListener('DOMContentLoaded', () => {
     // --- Elements ---
@@ -355,18 +353,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const copyMarkdownBtn = document.getElementById('copy-markdown-btn');
     const downloadRichtextHtmlBtn = document.getElementById('download-richtext-html-btn');
     const downloadMarkdownMdBtn = document.getElementById('download-markdown-md-btn');
-    const toast = document.getElementById('toast-notification');
-    let toastTimeout;
 
     // --- Global variables ---
     let GEMINI_API_KEY = '';
 
     // --- Utility Functions ---
-    const showToast = (message) => {
-        if (toastTimeout) clearTimeout(toastTimeout);
-        toast.textContent = message;
-        toast.classList.add('show');
-        toastTimeout = setTimeout(() => toast.classList.remove('show'), 3000);
+    // **FIX**: Replaced toast notification with a standard alert for errors.
+    const showErrorAlert = (message) => {
+        alert(message);
     };
 
     const setLoadingState = (button, isLoading) => {
@@ -382,7 +376,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const downloadFile = (content, defaultFileName, mimeTypeWithCharset) => {
         if (!content || !content.trim()) {
-            showToast('Tidak ada konten untuk diunduh!');
+            showErrorAlert('Tidak ada konten untuk diunduh!');
             return;
         }
         try {
@@ -397,7 +391,7 @@ document.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => URL.revokeObjectURL(url), 100);
         } catch (error) {
             console.error('Download error:', error);
-            showToast('Gagal mengunduh file.');
+            showErrorAlert('Gagal mengunduh file.');
         }
     };
 
@@ -436,7 +430,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (command === 'createLink') {
                 const selection = window.getSelection().toString();
                 if (selection.trim().length === 0) {
-                    showToast("Pilih teks terlebih dahulu untuk membuat tautan.");
+                    showErrorAlert("Pilih teks terlebih dahulu untuk membuat tautan.");
                     return;
                 }
                 const url = prompt("Masukkan URL:", "https://");
@@ -476,7 +470,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Gemini API Call ---
     const callGemini = async (prompt) => {
         if (!GEMINI_API_KEY) {
-            showToast('Kunci API Gemini tidak diatur.');
+            showErrorAlert('Kunci API Gemini tidak diatur.');
             throw new Error('API Key not set');
         }
         const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${GEMINI_API_KEY}`;
@@ -500,7 +494,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         } catch (error) {
             console.error("Gemini API call failed:", error);
-            showToast(`Error API: ${error.message}`);
+            showErrorAlert(`Error API: ${error.message}`);
             throw error;
         }
     };
@@ -526,7 +520,7 @@ document.addEventListener('DOMContentLoaded', () => {
             localStorage.setItem('geminiApiKey', key);
             initializeApp(key);
         } else {
-            showToast('Silakan masukkan kunci API yang valid.');
+            showErrorAlert('Silakan masukkan kunci API yang valid.');
         }
     });
     
@@ -567,16 +561,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (!textToCopy || !textToCopy.trim()) {
-            showToast('Tidak ada teks untuk disalin!');
+            showErrorAlert('Tidak ada teks untuk disalin!');
             return;
         }
         navigator.clipboard.writeText(textToCopy).then(() => {
             // Success: do nothing
-        }, () => showToast('Gagal menyalin.'));
+        }, () => showErrorAlert('Gagal menyalin.'));
     };
 
     toJsonBtn.addEventListener('click', async () => {
-        if (!promptInput.value) return showToast("Masukkan teks prompt.");
+        if (!promptInput.value) return showErrorAlert("Masukkan teks prompt.");
         setLoadingState(toJsonBtn, true);
         try {
             const geminiPrompt = `Analisis permintaan pengguna berikut dan ubah menjadi objek JSON dengan kunci "subjek", "aksi", "gaya", "detail", dan "prompt_negatif". Pastikan semua nilai adalah string. Hanya kembalikan objek JSON mentah. Permintaan: "${promptInput.value}"`;
@@ -588,7 +582,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     enhancePromptBtn.addEventListener('click', async () => {
-        if (!promptInput.value) return showToast("Masukkan teks prompt.");
+        if (!promptInput.value) return showErrorAlert("Masukkan teks prompt.");
         setLoadingState(enhancePromptBtn, true);
         try {
             const geminiPrompt = `Sempurnakan prompt gambar ini menjadi lebih kaya, imajinatif, dan sinematik. Tambahkan aksi, latar, gaya seni, dan pencahayaan dramatis. Kembalikan hanya teks prompt yang telah disempurnakan. Prompt: "${promptInput.value}"`;
@@ -598,7 +592,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     variateJsonBtn.addEventListener('click', async () => {
-        if (!jsonOutput.value) return showToast("Harus ada JSON untuk divariasikan.");
+        if (!jsonOutput.value) return showErrorAlert("Harus ada JSON untuk divariasikan.");
         setLoadingState(variateJsonBtn, true);
         try {
             const geminiPrompt = `Berdasarkan JSON ini, buat satu variasi kreatif dengan mengubah aksi atau gayanya. Pertahankan subjek utama. Kembalikan hanya objek JSON baru. JSON Asli: ${jsonOutput.value}`;
@@ -610,15 +604,15 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     toPromptBtn.addEventListener('click', () => {
-        if (!jsonOutput.value) return showToast("Masukkan format JSON.");
+        if (!jsonOutput.value) return showErrorAlert("Masukkan format JSON.");
         try {
             const data = JSON.parse(jsonOutput.value);
             promptInput.value = [data.subjek, data.aksi, data.gaya, data.detail].filter(Boolean).join(', ');
-        } catch (e) { showToast("Format JSON tidak valid!"); }
+        } catch (e) { showErrorAlert("Format JSON tidak valid!"); }
     });
 
     toMarkdownBtn.addEventListener('click', async () => {
-        if (!richTextInput.innerText.trim()) return showToast("Masukkan teks.");
+        if (!richTextInput.innerText.trim()) return showErrorAlert("Masukkan teks.");
         setLoadingState(toMarkdownBtn, true);
         try {
             const geminiPrompt = `Konversikan konten HTML ini ke Markdown. Pertahankan semua format. Kembalikan hanya teks Markdown mentah. Konten: \n\n${richTextInput.innerHTML}`;
@@ -628,7 +622,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     toRichtextBtn.addEventListener('click', async () => {
-        if (!markdownOutput.value) return showToast("Masukkan teks Markdown.");
+        if (!markdownOutput.value) return showErrorAlert("Masukkan teks Markdown.");
         setLoadingState(toRichtextBtn, true);
         try {
             const geminiPrompt = `Konversikan Markdown ini ke HTML. Pertahankan semua format. Kembalikan hanya kode HTML mentah. Markdown:\n\n${markdownOutput.value}`;
