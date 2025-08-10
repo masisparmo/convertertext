@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aplikasi Multi Converter AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+        .converter-card {
+            background-color: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            transition: all 0.3s ease;
+        }
+        .converter-card:hover {
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+        textarea, .rich-text-editor {
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            padding: 0.75rem;
+            width: 100%;
+            height: 250px;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            transition: border-color 0.2s ease;
+        }
+        .rich-text-editor { overflow-y: auto; }
+        textarea:focus, .rich-text-editor:focus {
+            outline: none;
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);
+        }
+        .btn {
+            display: inline-flex; align-items: center; justify-content: center;
+            padding: 0.5rem 1rem; border-radius: 0.5rem; font-weight: 500;
+            cursor: pointer; transition: all 0.2s ease; border: 1px solid transparent;
+        }
+        .btn:disabled { cursor: not-allowed; opacity: 0.7; }
+        .btn-primary { background-color: #4f46e5; color: white; }
+        .btn-primary:hover:not(:disabled) { background-color: #4338ca; }
+        .btn-secondary { background-color: #e5e7eb; color: #374151; border-color: #d1d5db; }
+        .btn-secondary:hover:not(:disabled) { background-color: #d1d5db; }
+        .btn-ai { background-color: #8b5cf6; color: white; }
+        .btn-ai:hover:not(:disabled) { background-color: #7c3aed; }
+        .spinner { animation: spin 1s linear infinite; display: inline-block; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 1000; opacity: 0; visibility: hidden; transition: opacity 0.3s, visibility 0.3s;
+        }
+        .modal-overlay.show { opacity: 1; visibility: visible; }
+        .modal-content {
+            background-color: white; padding: 2rem; border-radius: 0.75rem;
+            width: 90%; max-width: 500px; position: relative;
+            transform: scale(0.95); transition: transform 0.3s;
+        }
+        .modal-overlay.show .modal-content { transform: scale(1); }
+        .modal-close {
+            position: absolute; top: 1rem; right: 1rem;
+            background: none; border: none; font-size: 1.5rem;
+            cursor: pointer; color: #9ca3af;
+        }
+        .main-content.blurred { filter: blur(5px); pointer-events: none; }
+    </style>
+</head>
+<body class="p-4 sm:p-6 md:p-8">
+
+    <!-- API Key Modal -->
+    <div id="api-modal-overlay" class="modal-overlay">
+        <div class="modal-content">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">Masukkan Kunci API Gemini</h2>
+            <p class="text-gray-600 mb-4">Untuk menggunakan fitur AI, masukkan kunci API Anda. Kunci akan disimpan di browser Anda.</p>
+            <input type="password" id="api-key-input" class="w-full p-2 border rounded-md mb-4" placeholder="Masukkan Kunci API Anda di sini...">
+            <div class="flex flex-col sm:flex-row gap-3">
+                <button id="save-api-key-btn" class="btn btn-primary flex-1">Simpan dan Mulai</button>
+                <button id="how-to-api-btn" class="btn btn-secondary flex-1">Bagaimana Caranya?</button>
+            </div>
+            <p class="text-center text-gray-500 my-4">ATAU</p>
+            <a href="https://g.co/gemini/share/782c867b092e" target="_blank" class="btn btn-secondary w-full">
+                Gunakan di Lingkungan Gemini (Tanpa API)
+                <i class="fas fa-external-link-alt ml-2"></i>
+            </a>
+        </div>
+    </div>
+
+    <!-- Instructions Modal -->
+    <div id="instructions-modal-overlay" class="modal-overlay">
+        <div class="modal-content">
+            <button id="close-instructions-btn" class="modal-close">&times;</button>
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">Cara Mendapatkan Kunci API Gemini</h2>
+            <ol class="list-decimal list-inside space-y-3 text-gray-700">
+                <li>Buka Google AI Studio di <a href="https://aistudio.google.com/" target="_blank" class="text-indigo-600 hover:underline">aistudio.google.com</a>.</li>
+                <li>Login dengan akun Google Anda.</li>
+                <li>Klik tombol <strong>"Get API key"</strong> di pojok kiri atas.</li>
+                <li>Klik <strong>"Create API key in new project"</strong>.</li>
+                <li>Salin (copy) kunci API yang muncul.</li>
+                <li>Tempel (paste) kunci tersebut ke kolom input di halaman ini.</li>
+            </ol>
+        </div>
+    </div>
+
+    <div id="main-content" class="max-w-7xl mx-auto">
+        <header class="text-center mb-6">
+            <div id="api-status-bar" class="hidden items-center justify-center mb-4">
+                <p class="text-sm text-green-700 bg-green-100 px-3 py-1 rounded-full"><i class="fas fa-key mr-2"></i>Kunci API Gemini Aktif</p>
+                <button id="change-api-key-btn" class="ml-3 text-sm text-indigo-600 hover:underline">Ubah Kunci</button>
+            </div>
+            <h1 class="text-3xl sm:text-4xl font-bold text-gray-800">Aplikasi Multi Converter ✨ AI</h1>
+            <p class="mt-2 text-gray-600">Alat bantu konversi format teks dengan kekuatan Gemini AI.</p>
+        </header>
+
+        <main class="space-y-12">
+            <!-- All converter sections will go here -->
+            <section id="prompt-json-converter" class="converter-card p-6">
+                <h2 class="text-2xl font-semibold text-gray-800 mb-4">Konverter Prompt ↔ JSON (AI-Powered)</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+                    <div class="space-y-2">
+                        <label for="prompt-input" class="font-medium text-gray-700">Teks Prompt Biasa</label>
+                        <textarea id="prompt-input" placeholder="Contoh: seekor kucing oranye yang sedang tidur di atas tumpukan buku"></textarea>
+                    </div>
+                    <div class="space-y-2">
+                        <label for="json-output" class="font-medium text-gray-700">Format JSON</label>
+                        <textarea id="json-output" placeholder='Klik "Ke JSON" atau "Sempurnakan Prompt" untuk memulai.'></textarea>
+                    </div>
+                </div>
+                <div class="mt-6 flex flex-wrap gap-3 justify-between items-center">
+                    <div class="flex flex-wrap gap-3">
+                        <button id="to-json-btn" class="btn btn-primary"><i class="fas fa-arrow-right mr-2"></i> Ke JSON</button>
+                        <button id="enhance-prompt-btn" class="btn btn-ai"><i class="fas fa-magic-sparkles mr-2"></i> ✨ Sempurnakan Prompt</button>
+                        <button id="to-prompt-btn" class="btn btn-primary"><i class="fas fa-arrow-left mr-2"></i> Ke Teks Prompt</button>
+                        <button id="variate-json-btn" class="btn btn-ai"><i class="fas fa-lightbulb mr-2"></i> ✨ Buat Variasi</button>
+                    </div>
+                    <div class="flex flex-wrap gap-3">
+                        <button id="copy-prompt-btn" class="btn btn-secondary"><i class="fas fa-copy mr-2"></i> Salin Teks</button>
+                        <button id="copy-json-btn" class="btn btn-secondary"><i class="fas fa-copy mr-2"></i> Salin JSON</button>
+                        <button id="download-prompt-txt-btn" class="btn btn-secondary"><i class="fas fa-download mr-2"></i> Unduh .txt</button>
+                        <button id="download-json-btn" class="btn btn-secondary"><i class="fas fa-download mr-2"></i> Unduh .json</button>
+                    </div>
+                </div>
+            </section>
+
+            <section id="markdown-converter" class="converter-card p-6">
+                <h2 class="text-2xl font-semibold text-gray-800 mb-4">Konverter Teks ↔ Markdown (AI-Powered)</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+                    <div class="space-y-2">
+                        <label for="richtext-input" class="font-medium text-gray-700">Teks Biasa / Rich Text</label>
+                        <div id="richtext-input" class="rich-text-editor" contenteditable="true" placeholder="Ketik atau paste teks di sini..."></div>
+                    </div>
+                    <div class="space-y-2">
+                        <label for="markdown-output" class="font-medium text-gray-700">Format Markdown</label>
+                        <textarea id="markdown-output" placeholder="## Judul akan muncul di sini..."></textarea>
+                    </div>
+                </div>
+                 <div class="mt-6 flex flex-wrap gap-3 justify-between items-center">
+                    <div class="flex flex-wrap gap-3">
+                        <button id="to-markdown-btn" class="btn btn-primary">Ke Markdown <i class="fas fa-arrow-right ml-2"></i></button>
+                        <button id="to-richtext-btn" class="btn btn-primary"><i class="fas fa-arrow-left mr-2"></i> Ke Rich Text</button>
+                    </div>
+                    <div class="flex flex-wrap gap-3">
+                        <button id="copy-richtext-btn" class="btn btn-secondary"><i class="fas fa-copy mr-2"></i> Salin Teks</button>
+                        <button id="copy-markdown-btn" class="btn btn-secondary"><i class="fas fa-copy mr-2"></i> Salin Markdown</button>
+                        <button id="download-richtext-html-btn" class="btn btn-secondary"><i class="fas fa-download mr-2"></i> Unduh .html</button>
+                        <button id="download-markdown-md-btn" class="btn btn-secondary"><i class="fas fa-download mr-2"></i> Unduh .md</button>
+                    </div>
+                </div>
+            </section>
+        </main>
+        
+        <footer class="text-center mt-12 text-gray-500 text-sm">
+            <p>Dibuat dengan <i class="fas fa-heart text-red-500"></i> untuk kemudahan Anda.</p>
+        </footer>
+    </div>
+
+    <div id="toast-notification" class="toast-notification">Pesan notifikasi</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // --- Elements ---
+    const mainContent = document.getElementById('main-content');
+    const apiModalOverlay = document.getElementById('api-modal-overlay');
+    const instructionsModalOverlay = document.getElementById('instructions-modal-overlay');
+    const apiKeyInput = document.getElementById('api-key-input');
+    const saveApiKeyBtn = document.getElementById('save-api-key-btn');
+    const howToApiBtn = document.getElementById('how-to-api-btn');
+    const closeInstructionsBtn = document.getElementById('close-instructions-btn');
+    const apiStatusBar = document.getElementById('api-status-bar');
+    const changeApiKeyBtn = document.getElementById('change-api-key-btn');
+
+    // --- App Logic Elements ---
+    const promptInput = document.getElementById('prompt-input');
+    const jsonOutput = document.getElementById('json-output');
+    const toJsonBtn = document.getElementById('to-json-btn');
+    const enhancePromptBtn = document.getElementById('enhance-prompt-btn');
+    const toPromptBtn = document.getElementById('to-prompt-btn');
+    const variateJsonBtn = document.getElementById('variate-json-btn');
+    const copyPromptBtn = document.getElementById('copy-prompt-btn');
+    const copyJsonBtn = document.getElementById('copy-json-btn');
+    const downloadPromptTxtBtn = document.getElementById('download-prompt-txt-btn');
+    const downloadJsonBtn = document.getElementById('download-json-btn');
+    const richTextInput = document.getElementById('richtext-input');
+    const markdownOutput = document.getElementById('markdown-output');
+    const toMarkdownBtn = document.getElementById('to-markdown-btn');
+    const toRichtextBtn = document.getElementById('to-richtext-btn');
+    const copyRichtextBtn = document.getElementById('copy-richtext-btn');
+    const copyMarkdownBtn = document.getElementById('copy-markdown-btn');
+    const downloadRichtextHtmlBtn = document.getElementById('download-richtext-html-btn');
+    const downloadMarkdownMdBtn = document.getElementById('download-markdown-md-btn');
+    const toast = document.getElementById('toast-notification');
+    let toastTimeout;
+
+    // Global variable for API Key
+    let GEMINI_API_KEY = '';
+
+    // --- Utility Functions ---
+    const showToast = (message) => {
+        if (toastTimeout) clearTimeout(toastTimeout);
+        toast.textContent = message;
+        toast.classList.add('show');
+        toastTimeout = setTimeout(() => toast.classList.remove('show'), 3000);
+    };
+
+    const setLoadingState = (button, isLoading) => {
+        if (isLoading) {
+            button.disabled = true;
+            button.dataset.originalHtml = button.innerHTML;
+            button.innerHTML = `<i class="fas fa-spinner spinner mr-2"></i> Memproses...`;
+        } else {
+            button.disabled = false;
+            if (button.dataset.originalHtml) button.innerHTML = button.dataset.originalHtml;
+        }
+    };
+
+    // --- DOWNLOAD FUNCTION WITH "SAVE AS" DIALOG ---
+    const downloadFile = async (content, defaultFileName, mimeTypeWithCharset) => {
+        if (!content || !content.trim()) {
+            showToast('Tidak ada konten untuk diunduh!');
+            return;
+        }
+        
+        const mimeType = mimeTypeWithCharset.split(';')[0];
+        const blob = new Blob([content], { type: mimeTypeWithCharset });
+
+        // Use modern "Save As" API if available (works on GitHub pages, not in restricted iframes)
+        if (window.showSaveFilePicker && localStorage.getItem('geminiApiKey')) {
+            try {
+                const handle = await window.showSaveFilePicker({
+                    suggestedName: defaultFileName,
+                    types: [{
+                        description: 'File',
+                        accept: { [mimeType]: [`.${defaultFileName.split('.').pop()}`] },
+                    }],
+                });
+                const writable = await handle.createWritable();
+                await writable.write(blob);
+                await writable.close();
+                showToast('File berhasil disimpan!');
+                return;
+            } catch (err) {
+                if (err.name === 'AbortError') {
+                    showToast('Penyimpanan dibatalkan.');
+                    return;
+                }
+                console.error('showSaveFilePicker error, using fallback:', err);
+            }
+        }
+
+        // Fallback for Gemini environment or older browsers
+        try {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = defaultFileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error('Fallback download error:', error);
+            showToast('Gagal mengunduh file.');
+        }
+    };
+
+    // --- Gemini API Call ---
+    const callGemini = async (prompt) => {
+        if (!GEMINI_API_KEY) {
+            showToast('Kunci API Gemini tidak diatur.');
+            throw new Error('API Key not set');
+        }
+        const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${GEMINI_API_KEY}`;
+        const payload = { contents: [{ parts: [{ text: prompt }] }] };
+        
+        try {
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(`HTTP error! status: ${response.status}, message: ${errorData.error.message}`);
+            }
+            const result = await response.json();
+            if (result.candidates && result.candidates[0]?.content?.parts[0]?.text) {
+                return result.candidates[0].content.parts[0].text.replace(/^```(markdown|md|json)?\n?/, '').replace(/```$/, '').trim();
+            } else {
+                throw new Error("Struktur respons API tidak valid.");
+            }
+        } catch (error) {
+            console.error("Gemini API call failed:", error);
+            showToast(`Error API: ${error.message}`);
+            throw error;
+        }
+    };
+
+    // --- API Key Management ---
+    function initializeApp(apiKey) {
+        GEMINI_API_KEY = apiKey;
+        mainContent.classList.remove('blurred');
+        apiModalOverlay.classList.remove('show');
+        apiStatusBar.classList.remove('hidden');
+        apiStatusBar.classList.add('flex');
+    }
+
+    function showApiModal() {
+        mainContent.classList.add('blurred');
+        apiModalOverlay.classList.add('show');
+    }
+
+    saveApiKeyBtn.addEventListener('click', () => {
+        const key = apiKeyInput.value.trim();
+        if (key) {
+            localStorage.setItem('geminiApiKey', key);
+            initializeApp(key);
+        } else {
+            showToast('Silakan masukkan kunci API yang valid.');
+        }
+    });
+    
+    changeApiKeyBtn.addEventListener('click', () => {
+        if (confirm('Apakah Anda yakin ingin mengubah atau menghapus Kunci API?')) {
+            localStorage.removeItem('geminiApiKey');
+            GEMINI_API_KEY = '';
+            apiStatusBar.classList.add('hidden');
+            showApiModal();
+        }
+    });
+
+    howToApiBtn.addEventListener('click', () => instructionsModalOverlay.classList.add('show'));
+    closeInstructionsBtn.addEventListener('click', () => instructionsModalOverlay.classList.remove('show'));
+
+    // --- Initial Load Check ---
+    const savedApiKey = localStorage.getItem('geminiApiKey');
+    // The special key "GOOGLE_API_KEY" is provided by the Gemini environment.
+    // If it exists, we know we are NOT on GitHub Pages.
+    if (typeof GOOGLE_API_KEY !== 'undefined' && GOOGLE_API_KEY) {
+        initializeApp(GOOGLE_API_KEY);
+        apiStatusBar.querySelector('p').textContent = 'Berjalan di Lingkungan Gemini';
+        changeApiKeyBtn.style.display = 'none';
+    } else if (savedApiKey) {
+        initializeApp(savedApiKey);
+    } else {
+        showApiModal();
+    }
+
+    // --- Event Listeners for Converters ---
+    const copyToClipboard = (elementIdOrText, isElement = true) => {
+        let textToCopy;
+        if (isElement) {
+            const element = document.getElementById(elementIdOrText);
+            textToCopy = element.value !== undefined ? element.value : element.innerText;
+        } else {
+            textToCopy = elementIdOrText;
+        }
+
+        if (!textToCopy || !textToCopy.trim()) {
+            showToast('Tidak ada teks untuk disalin!');
+            return;
+        }
+        navigator.clipboard.writeText(textToCopy).then(() => showToast('Teks berhasil disalin!'), () => showToast('Gagal menyalin.'));
+    };
+
+    toJsonBtn.addEventListener('click', async () => {
+        if (!promptInput.value) return showToast("Masukkan teks prompt.");
+        setLoadingState(toJsonBtn, true);
+        try {
+            const geminiPrompt = `Analisis permintaan pengguna berikut dan ubah menjadi objek JSON dengan kunci "subjek", "aksi", "gaya", "detail", dan "prompt_negatif". Pastikan semua nilai adalah string. Hanya kembalikan objek JSON mentah. Permintaan: "${promptInput.value}"`;
+            const result = await callGemini(geminiPrompt);
+            const parsedJson = JSON.parse(result);
+            jsonOutput.value = JSON.stringify(parsedJson, null, 4);
+        } catch (error) { /* error is handled in callGemini */ } 
+        finally { setLoadingState(toJsonBtn, false); }
+    });
+
+    enhancePromptBtn.addEventListener('click', async () => {
+        if (!promptInput.value) return showToast("Masukkan teks prompt.");
+        setLoadingState(enhancePromptBtn, true);
+        try {
+            const geminiPrompt = `Sempurnakan prompt gambar ini menjadi lebih kaya, imajinatif, dan sinematik. Tambahkan aksi, latar, gaya seni, dan pencahayaan dramatis. Kembalikan hanya teks prompt yang telah disempurnakan. Prompt: "${promptInput.value}"`;
+            promptInput.value = await callGemini(geminiPrompt);
+            showToast("Prompt berhasil disempurnakan!");
+        } catch (error) { /* error is handled in callGemini */ }
+        finally { setLoadingState(enhancePromptBtn, false); }
+    });
+
+    variateJsonBtn.addEventListener('click', async () => {
+        if (!jsonOutput.value) return showToast("Harus ada JSON untuk divariasikan.");
+        setLoadingState(variateJsonBtn, true);
+        try {
+            const geminiPrompt = `Berdasarkan JSON ini, buat satu variasi kreatif dengan mengubah aksi atau gayanya. Pertahankan subjek utama. Kembalikan hanya objek JSON baru. JSON Asli: ${jsonOutput.value}`;
+            const result = await callGemini(geminiPrompt);
+            const parsedJson = JSON.parse(result);
+            jsonOutput.value = JSON.stringify(parsedJson, null, 4);
+            showToast("Variasi baru berhasil dibuat!");
+        } catch (error) { /* error is handled in callGemini */ }
+        finally { setLoadingState(variateJsonBtn, false); }
+    });
+
+    toPromptBtn.addEventListener('click', () => {
+        if (!jsonOutput.value) return showToast("Masukkan format JSON.");
+        try {
+            const data = JSON.parse(jsonOutput.value);
+            promptInput.value = [data.subjek, data.aksi, data.gaya, data.detail].filter(Boolean).join(', ');
+        } catch (e) { showToast("Format JSON tidak valid!"); }
+    });
+
+    toMarkdownBtn.addEventListener('click', async () => {
+        if (!richTextInput.innerText.trim()) return showToast("Masukkan teks.");
+        setLoadingState(toMarkdownBtn, true);
+        try {
+            const geminiPrompt = `Konversikan konten HTML ini ke Markdown. Pertahankan semua format. Kembalikan hanya teks Markdown mentah. Konten: \n\n${richTextInput.innerHTML}`;
+            markdownOutput.value = await callGemini(geminiPrompt);
+        } catch (error) { /* error is handled in callGemini */ }
+        finally { setLoadingState(toMarkdownBtn, false); }
+    });
+
+    toRichtextBtn.addEventListener('click', async () => {
+        if (!markdownOutput.value) return showToast("Masukkan teks Markdown.");
+        setLoadingState(toRichtextBtn, true);
+        try {
+            const geminiPrompt = `Konversikan Markdown ini ke HTML. Pertahankan semua format. Kembalikan hanya kode HTML mentah. Markdown:\n\n${markdownOutput.value}`;
+            richTextInput.innerHTML = await callGemini(geminiPrompt);
+        } catch (error) { /* error is handled in callGemini */ }
+        finally { setLoadingState(toRichtextBtn, false); }
+    });
+
+    copyPromptBtn.addEventListener('click', () => copyToClipboard('prompt-input'));
+    copyJsonBtn.addEventListener('click', () => copyToClipboard('json-output'));
+    copyRichtextBtn.addEventListener('click', () => copyToClipboard(richTextInput.innerText, false));
+    copyMarkdownBtn.addEventListener('click', () => copyToClipboard('markdown-output'));
+
+    downloadPromptTxtBtn.addEventListener('click', () => downloadFile(promptInput.value, 'prompt.txt', 'text/plain;charset=utf-8'));
+    downloadJsonBtn.addEventListener('click', () => downloadFile(jsonOutput.value, 'prompt.json', 'application/json;charset=utf-8'));
+    downloadRichtextHtmlBtn.addEventListener('click', () => {
+        const content = richTextInput.innerHTML;
+        const title = richTextInput.querySelector('h1, h2, h3')?.innerText.trim() || 'dokumen';
+        const safeTitle = title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+        const fullHtml = `<!DOCTYPE html><html lang="id"><head><meta charset="UTF-8"><title>${title}</title><style>body{font-family:sans-serif;line-height:1.6;padding:2rem;max-width:800px;margin:auto;}</style></head><body>${content}</body></html>`;
+        downloadFile(fullHtml, `${safeTitle}.html`, 'text/html;charset=utf-8');
+    });
+    downloadMarkdownMdBtn.addEventListener('click', () => {
+        const title = markdownOutput.value.split('\n')[0].replace(/#/g, '').trim() || 'dokumen';
+        const safeTitle = title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+        downloadFile(markdownOutput.value, `${safeTitle}.md`, 'text/markdown;charset=utf-8');
+    });
+});
+</script>
+
+</body>
+</html>
